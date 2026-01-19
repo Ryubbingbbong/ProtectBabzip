@@ -423,21 +423,20 @@
         </div>
     </div>
 
-    <!-- Firebase SDK (compat 버전 사용) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <script>
-        // Firebase 설정
+        // ⚠️ Firebase 설정 - 여기에 본인의 Firebase 설정을 넣으세요
         const firebaseConfig = {
-            apiKey: "AIzaSyAfUjgOY2wEZl07wIoW0D_6QyLP7CBpOV4",
-            authDomain: "protectbabzip.firebaseapp.com",
-            databaseURL: "https://protectbabzip-default-rtdb.firebaseio.com",
-            projectId: "protectbabzip",
-            storageBucket: "protectbabzip.firebasestorage.app",
-            messagingSenderId: "894116351930",
-            appId: "1:894116351930:web:9a99b6b9a6638fc8279783",
-            measurementId: "G-HNQL1TX12R"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-project.firebaseapp.com",
+            databaseURL: "https://your-project.firebaseio.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
         };
 
         // Firebase 초기화
@@ -458,8 +457,13 @@
             showFirebaseSetupGuide();
         }
 
-        // 시간대 옵션
-        const timeSlots = ['18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+        // 시간대 옵션 (24시간)
+        const timeSlots = [
+            '00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
+            '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+            '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+            '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+        ];
         const RECOMMEND_THRESHOLD = 10; // 추천 표시 기준
         const AUTO_CONFIRM_THRESHOLD = 15; // 자동 확정 기준
         const CONFIRMED_PARTICIPANTS = 10; // 확정 인원
@@ -635,12 +639,30 @@
             if (index > -1) {
                 // 투표 취소
                 participants.splice(index, 1);
+                // 빈 배열이면 시간대 삭제
+                if (participants.length === 0) {
+                    delete raid[timeSlot];
+                }
             } else {
                 // 투표 추가
                 participants.push(currentUserName);
             }
 
             dataRef.set(globalData);
+        }
+
+        // 시간대 투표 추가
+        function addTimeVote(raidId) {
+            const selectId = `timeSelect_${raidId}`;
+            const select = document.getElementById(selectId);
+            const timeSlot = select.value;
+
+            if (!timeSlot) {
+                alert('시간을 선택해주세요!');
+                return;
+            }
+
+            toggleVote(raidId, timeSlot);
         }
 
         // 내 투표 횟수 계산
@@ -779,58 +801,84 @@
             
             const raid = globalData.raids[raidId];
             
-            container.innerHTML = timeSlots.map(time => {
-                const participants = raid[time] || [];
-                const isSelected = participants.includes(currentUserName);
-                const isRecommended = participants.length >= RECOMMEND_THRESHOLD;
-                const isAutoConfirm = participants.length >= AUTO_CONFIRM_THRESHOLD;
+            // 투표된 시간대만 추출하고 시간순 정렬
+            const votedTimes = Object.keys(raid).sort();
+            
+            // 시간 선택 드롭다운 생성
+            const timeOptions = timeSlots.map(time => 
+                `<option value="${time}">${time}</option>`
+            ).join('');
+            
+            let html = `
+                <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+                    <select id="timeSelect_${raidId}" style="flex: 1; margin-bottom: 0;">
+                        <option value="">시간 선택</option>
+                        ${timeOptions}
+                    </select>
+                    <button onclick="addTimeVote('${raidId}')" style="white-space: nowrap;">투표하기</button>
+                </div>
+            `;
+            
+            // 투표된 시간대가 있으면 표시
+            if (votedTimes.length > 0) {
+                html += '<div style="margin-top: 10px;">';
                 
-                let confirmedMembers = [];
-                let waitingMembers = [];
-                
-                if (isAutoConfirm) {
-                    confirmedMembers = getConfirmedMembers(raidId, time);
-                    waitingMembers = participants.filter(p => !confirmedMembers.includes(p));
-                } else {
-                    confirmedMembers = participants;
-                }
+                votedTimes.forEach(time => {
+                    const participants = raid[time] || [];
+                    const isSelected = participants.includes(currentUserName);
+                    const isRecommended = participants.length >= RECOMMEND_THRESHOLD;
+                    const isAutoConfirm = participants.length >= AUTO_CONFIRM_THRESHOLD;
+                    
+                    let confirmedMembers = [];
+                    let waitingMembers = [];
+                    
+                    if (isAutoConfirm) {
+                        confirmedMembers = getConfirmedMembers(raidId, time);
+                        waitingMembers = participants.filter(p => !confirmedMembers.includes(p));
+                    } else {
+                        confirmedMembers = participants;
+                    }
 
-                const isConfirmed = confirmedMembers.includes(currentUserName);
-                const isWaiting = waitingMembers.includes(currentUserName);
-
-                return `
-                    <div class="time-slot ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}" onclick="toggleVote('${raidId}', '${time}')">
-                        <div class="slot-header">
-                            <div>
-                                <span>${time}</span>
-                                ${isRecommended ? '<span class="badge-recommend">추천</span>' : ''}
-                            </div>
-                            <span class="slot-count">${participants.length}명</span>
-                        </div>
-                        
-                        ${isAutoConfirm ? `
-                            <div class="confirmed-section">
-                                <div class="section-title">✓ 확정 (${confirmedMembers.length}명)</div>
-                                <div class="participants">
-                                    ${confirmedMembers.map(p => `<span class="participant confirmed ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
+                    html += `
+                        <div class="time-slot ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}" onclick="toggleVote('${raidId}', '${time}')">
+                            <div class="slot-header">
+                                <div>
+                                    <span>${time}</span>
+                                    ${isRecommended ? '<span class="badge-recommend">추천</span>' : ''}
                                 </div>
+                                <span class="slot-count">${participants.length}명</span>
                             </div>
-                            ${waitingMembers.length > 0 ? `
-                                <div class="waiting-section">
-                                    <div class="section-title">⏳ 대기 (${waitingMembers.length}명)</div>
+                            
+                            ${isAutoConfirm ? `
+                                <div class="confirmed-section">
+                                    <div class="section-title">✓ 확정 (${confirmedMembers.length}명)</div>
                                     <div class="participants">
-                                        ${waitingMembers.map(p => `<span class="participant waiting ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
+                                        ${confirmedMembers.map(p => `<span class="participant confirmed ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
                                     </div>
                                 </div>
-                            ` : ''}
-                        ` : `
-                            <div class="participants">
-                                ${confirmedMembers.map(p => `<span class="participant ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
-                            </div>
-                        `}
-                    </div>
-                `;
-            }).join('');
+                                ${waitingMembers.length > 0 ? `
+                                    <div class="waiting-section">
+                                        <div class="section-title">⏳ 대기 (${waitingMembers.length}명)</div>
+                                        <div class="participants">
+                                            ${waitingMembers.map(p => `<span class="participant waiting ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            ` : `
+                                <div class="participants">
+                                    ${confirmedMembers.map(p => `<span class="participant ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
+                                </div>
+                            `}
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            } else {
+                html += '<div style="color: #888; text-align: center; padding: 20px;">아직 투표가 없습니다</div>';
+            }
+            
+            container.innerHTML = html;
         }
 
         // 전체 렌더링
@@ -951,14 +999,14 @@
 
         // 테스트 데이터 추가
         function addTestData() {
-            if (!confirm('테스트 데이터를 추가하시겠습니까?\n토요일 1차 18:00에 20명의 가상 투표가 추가됩니다.')) {
+            if (!confirm('테스트 데이터를 추가하시겠습니까?\n토요일 1차 20:00에 20명의 가상 투표가 추가됩니다.')) {
                 return;
             }
 
             // 다양한 패턴의 테스트 사용자 생성
             const testUsers = [];
             
-            // 1순위 그룹: 18:00만 투표 + 레이드 0번 (5명)
+            // 1순위 그룹: 20:00만 투표 + 레이드 0번 (5명)
             for (let i = 1; i <= 5; i++) {
                 testUsers.push(`1순위${i}`);
             }
@@ -968,7 +1016,7 @@
                 testUsers.push(`2순위${i}`);
             }
             
-            // 3순위 그룹: 18:00만 투표 + 다른 레이드 1번 확정 (5명)
+            // 3순위 그룹: 20:00만 투표 + 다른 레이드 1번 확정 (5명)
             for (let i = 1; i <= 5; i++) {
                 testUsers.push(`3순위${i}`);
             }
@@ -978,39 +1026,43 @@
                 testUsers.push(`4순위${i}`);
             }
 
-            // 토요일 1차 18:00에 모든 사용자 추가
-            if (!globalData.raids.sat1['18:00']) {
-                globalData.raids.sat1['18:00'] = [];
+            // 토요일 1차 20:00에 모든 사용자 추가
+            if (!globalData.raids.sat1['20:00']) {
+                globalData.raids.sat1['20:00'] = [];
             }
-            globalData.raids.sat1['18:00'] = testUsers;
+            globalData.raids.sat1['20:00'] = testUsers;
 
-            // 2순위 그룹에게 19:00도 투표하게 함
-            if (!globalData.raids.sat1['19:00']) {
-                globalData.raids.sat1['19:00'] = [];
+            // 2순위 그룹에게 21:00도 투표하게 함
+            if (!globalData.raids.sat1['21:00']) {
+                globalData.raids.sat1['21:00'] = [];
             }
             for (let i = 1; i <= 5; i++) {
-                globalData.raids.sat1['19:00'].push(`2순위${i}`);
+                globalData.raids.sat1['21:00'].push(`2순위${i}`);
             }
 
-            // 3순위 그룹에게 일요일 1차 20:00 확정 부여 (9명만 추가하여 확정되지 않게)
-            if (!globalData.raids.sun1['20:00']) {
-                globalData.raids.sun1['20:00'] = [];
+            // 토요일 1차에 추가 시간대 몇 개 더 (다양한 시간 테스트)
+            globalData.raids.sat1['14:00'] = ['테스트1', '테스트2', '테스트3'];
+            globalData.raids.sat1['18:00'] = ['테스트4', '테스트5', '테스트6', '테스트7', '테스트8'];
+
+            // 3순위 그룹에게 일요일 1차 22:00 투표 (9명만 추가하여 15명 미만)
+            if (!globalData.raids.sun1['22:00']) {
+                globalData.raids.sun1['22:00'] = [];
             }
             for (let i = 1; i <= 5; i++) {
-                globalData.raids.sun1['20:00'].push(`3순위${i}`);
+                globalData.raids.sun1['22:00'].push(`3순위${i}`);
             }
 
-            // 4순위 그룹에게 여러 시간대 투표 + 일요일 2차 확정
-            if (!globalData.raids.sun1['21:00']) {
-                globalData.raids.sun1['21:00'] = [];
+            // 4순위 그룹에게 여러 시간대 투표
+            if (!globalData.raids.sun1['19:00']) {
+                globalData.raids.sun1['19:00'] = [];
             }
             for (let i = 1; i <= 5; i++) {
-                globalData.raids.sun1['21:00'].push(`4순위${i}`);
+                globalData.raids.sun1['19:00'].push(`4순위${i}`);
             }
             
-            // 일요일 2차 22:00에 4순위 그룹 확정 (정확히 10명으로 확정)
-            if (!globalData.raids.sun2['22:00']) {
-                globalData.raids.sun2['22:00'] = [];
+            // 일요일 2차 23:00에 4순위 그룹 확정 (정확히 10명으로 확정)
+            if (!globalData.raids.sun2['23:00']) {
+                globalData.raids.sun2['23:00'] = [];
             }
             const sun2Participants = [];
             for (let i = 1; i <= 5; i++) {
@@ -1020,10 +1072,10 @@
             for (let i = 1; i <= 5; i++) {
                 sun2Participants.push(`채우기${i}`);
             }
-            globalData.raids.sun2['22:00'] = sun2Participants;
+            globalData.raids.sun2['23:00'] = sun2Participants;
 
             dataRef.set(globalData);
-            alert('테스트 데이터가 추가되었습니다!\n\n확인사항:\n- 토요일 1차 18:00: 20명 투표\n- 1순위 5명: 18:00만 투표, 레이드 0번\n- 2순위 5명: 18:00+19:00 투표, 레이드 0번\n- 3순위 5명: 18:00만 투표, 다른 레이드 참가\n- 4순위 5명: 여러 시간대 투표, 다른 레이드 확정');
+            alert('테스트 데이터가 추가되었습니다!\n\n확인사항:\n- 토요일 1차: 14:00(3명), 18:00(5명), 20:00(20명), 21:00(5명)\n- 20:00에 15명 이상 → 확정/대기 시스템 확인\n- 일요일 1차, 2차에도 테스트 데이터 추가됨');
         }
     </script>
 </body>
