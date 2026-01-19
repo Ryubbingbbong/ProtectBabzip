@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마을 방어 레이드 스케줄</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .reset-info {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .section {
+            background: #111;
+            border: 2px solid #333;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #333;
+        }
+
+        .user-setup {
+            margin-bottom: 15px;
+        }
+
+        .user-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            flex: 1;
+            padding: 10px;
+            background: #000;
+            border: 2px solid #333;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+        }
+
+        button:hover {
+            background: #ddd;
+        }
+
+        button:active {
+            background: #bbb;
+        }
+
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .btn-danger {
+            background: #c00;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #a00;
+        }
+
+        .user-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .user-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+
+        .user-tag .count {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .user-tag.me {
+            border-color: #fff;
+        }
+
+        .raid-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .raid-card {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .raid-card h3 {
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+
+        .time-slot {
+            margin-bottom: 10px;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .time-slot:hover {
+            border-color: #666;
+            background: #151515;
+        }
+
+        .time-slot.selected {
+            border-color: #fff;
+            background: #222;
+        }
+
+        .time-slot.recommended {
+            background: #1a1a00;
+            border-color: #666600;
+        }
+
+        .time-slot.recommended:hover {
+            background: #252500;
+        }
+
+        .badge-recommend {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 8px;
+            background: #ffcc00;
+            color: #000;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .confirmed-section,
+        .waiting-section {
+            margin-top: 10px;
+        }
+
+        .section-title {
+            font-size: 0.85em;
+            color: #aaa;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .confirmed-section .section-title {
+            color: #0f0;
+        }
+
+        .waiting-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
+        }
+
+        .waiting-section .section-title {
+            color: #f90;
+        }
+
+        .slot-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .slot-count {
+            color: #888;
+        }
+
+        .slot-count.full {
+            color: #c00;
+        }
+
+        .participants {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 0.85em;
+        }
+
+        .participant {
+            padding: 4px 8px;
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .participant.me {
+            background: #fff;
+            color: #000;
+        }
+
+        .participant.confirmed {
+            background: #1a4d1a;
+            color: #0f0;
+        }
+
+        .participant.confirmed.me {
+            background: #0f0;
+            color: #000;
+        }
+
+        .participant.waiting {
+            background: #4d2a1a;
+            color: #f90;
+        }
+
+        .participant.waiting.me {
+            background: #f90;
+            color: #000;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #000;
+            border: 2px solid #333;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .connection-status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .connection-status.connected {
+            background: #1a4d1a;
+            color: #0f0;
+        }
+
+        .connection-status.disconnected {
+            background: #4d1a1a;
+            color: #f00;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .raid-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="connectionStatus" class="connection-status disconnected">Firebase 연결 중...</div>
+    
+    <h1>⚔️ 마을 방어 레이드 스케줄</h1>
+    <div class="reset-info">매주 수요일 00:00 초기화</div>
+
+    <div id="app" class="loading">
+        로딩 중...
+    </div>
+
+    <!-- 관리자 비밀번호 모달 -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <h3>관리자 인증</h3>
+            <input type="password" id="adminPassword" placeholder="관리자 비밀번호 입력">
+            <div class="modal-buttons">
+                <button onclick="closeAdminModal()">취소</button>
+                <button onclick="verifyAdmin()">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (compat 버전 사용) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfUjgOY2wEZl07wIoW0D_6QyLP7CBpOV4",
+            authDomain: "protectbabzip.firebaseapp.com",
+            databaseURL: "https://protectbabzip-default-rtdb.firebaseio.com",
+            projectId: "protectbabzip",
+            storageBucket: "protectbabzip.firebasestorage.app",
+            messagingSenderId: "894116351930",
+            appId: "1:894116351930:web:9a99b6b9a6638fc8279783",
+            measurementId: "G-HNQL1TX12R"
+        };
+
+        // Firebase 초기화
+        let app, database, dataRef;
+        let currentUserName = localStorage.getItem('userName') || '';
+        
+        // 관리자 비밀번호 (실제로는 Firebase에서 관리하는 것이 좋습니다)
+        const ADMIN_PASSWORD = "admin1234"; // ⚠️ 이 비밀번호를 변경하세요!
+
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            dataRef = database.ref('raidSchedule');
+            updateConnectionStatus(true);
+        } catch (error) {
+            console.error('Firebase 초기화 실패:', error);
+            updateConnectionStatus(false);
+            showFirebaseSetupGuide();
+        }
+
+        // 시간대 옵션
+        const timeSlots = ['18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+        const RECOMMEND_THRESHOLD = 10; // 추천 표시 기준
+        const AUTO_CONFIRM_THRESHOLD = 15; // 자동 확정 기준
+        const CONFIRMED_PARTICIPANTS = 10; // 확정 인원
+
+        let globalData = {
+            weekdaySelections: { weekday1: '', weekday2: '' },
+            raids: {
+                sat1: {}, sat2: {}, sun1: {}, sun2: {},
+                weekday1: {}, weekday2: {}
+            },
+            lastReset: null
+        };
+
+        // 연결 상태 업데이트
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            if (connected) {
+                status.className = 'connection-status connected';
+                status.textContent = '✓ 실시간 동기화 중';
+            } else {
+                status.className = 'connection-status disconnected';
+                status.textContent = '✗ 연결 끊김';
+            }
+        }
+
+        // Firebase 설정 안내
+        function showFirebaseSetupGuide() {
+            document.getElementById('app').innerHTML = `
+                <div class="section">
+                    <h2>🔧 Firebase 설정이 필요합니다</h2>
+                    <p style="margin: 15px 0; line-height: 1.6;">
+                        실시간 공유 기능을 사용하려면 Firebase 설정이 필요합니다.<br>
+                        아래 단계를 따라 설정해주세요:
+                    </p>
+                    <ol style="margin-left: 20px; line-height: 2;">
+                        <li><a href="https://console.firebase.google.com/" target="_blank" style="color: #fff;">Firebase Console</a>에 접속</li>
+                        <li>새 프로젝트 생성</li>
+                        <li>Realtime Database 활성화</li>
+                        <li>프로젝트 설정에서 웹 앱 추가</li>
+                        <li>Firebase 설정 정보를 코드의 firebaseConfig에 입력</li>
+                    </ol>
+                    <p style="margin-top: 20px; color: #888;">
+                        자세한 설정 방법은 README.md를 참고하세요.
+                    </p>
+                </div>
+            `;
+        }
+
+        // Firebase 데이터 리스너
+        if (dataRef) {
+            dataRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    globalData = data;
+                    checkWeeklyReset();
+                    render();
+                } else {
+                    // 초기 데이터 설정
+                    dataRef.set(globalData);
+                }
+            });
+
+            // 연결 상태 모니터링
+            database.ref('.info/connected').on('value', (snapshot) => {
+                updateConnectionStatus(snapshot.val() === true);
+            });
+        }
+
+        // 매주 수요일 초기화 체크
+        function checkWeeklyReset() {
+            const now = new Date();
+            const lastReset = globalData.lastReset ? new Date(globalData.lastReset) : null;
+            
+            const thisWednesday = new Date(now);
+            const day = now.getDay();
+            thisWednesday.setDate(now.getDate() - day + 3);
+            thisWednesday.setHours(0, 0, 0, 0);
+
+            const lastWednesday = new Date(thisWednesday);
+            lastWednesday.setDate(lastWednesday.getDate() - 7);
+
+            if (!lastReset || lastReset < lastWednesday) {
+                if (day === 3 && now.getHours() === 0) {
+                    resetSchedule(true);
+                }
+            }
+        }
+
+        // 스케줄 초기화
+        function resetSchedule(auto = false) {
+            if (!auto) {
+                showAdminModal('reset');
+                return;
+            }
+
+            globalData = {
+                weekdaySelections: { weekday1: '', weekday2: '' },
+                raids: {
+                    sat1: {}, sat2: {}, sun1: {}, sun2: {},
+                    weekday1: {}, weekday2: {}
+                },
+                lastReset: new Date().toISOString()
+            };
+            dataRef.set(globalData);
+        }
+
+        // 관리자 모달 표시
+        let adminAction = null;
+        function showAdminModal(action) {
+            adminAction = action;
+            document.getElementById('adminModal').classList.add('active');
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminPassword').focus();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.remove('active');
+            adminAction = null;
+        }
+
+        function verifyAdmin() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                closeAdminModal();
+                if (adminAction === 'reset') {
+                    if (confirm('정말로 모든 스케줄을 초기화하시겠습니까?')) {
+                        resetSchedule(true);
+                    }
+                }
+            } else {
+                alert('비밀번호가 올바르지 않습니다.');
+            }
+        }
+
+        // Enter 키로 관리자 인증
+        document.addEventListener('DOMContentLoaded', () => {
+            const adminPasswordInput = document.getElementById('adminPassword');
+            if (adminPasswordInput) {
+                adminPasswordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        verifyAdmin();
+                    }
+                });
+            }
+        });
+
+        // 사용자 이름 설정
+        function setUserName() {
+            const input = document.getElementById('userName');
+            const name = input.value.trim();
+            if (name) {
+                currentUserName = name;
+                localStorage.setItem('userName', name);
+                render();
+            }
+        }
+
+        // 레이드에 투표
+        function toggleVote(raidId, timeSlot) {
+            if (!currentUserName) {
+                alert('먼저 이름을 등록해주세요!');
+                return;
+            }
+
+            const raid = globalData.raids[raidId];
+            if (!raid[timeSlot]) {
+                raid[timeSlot] = [];
+            }
+
+            const participants = raid[timeSlot];
+            const index = participants.indexOf(currentUserName);
+
+            if (index > -1) {
+                // 투표 취소
+                participants.splice(index, 1);
+            } else {
+                // 투표 추가
+                participants.push(currentUserName);
+            }
+
+            dataRef.set(globalData);
+        }
+
+        // 내 투표 횟수 계산
+        function getMyVoteCount() {
+            let count = 0;
+            for (const raidId in globalData.raids) {
+                const raid = globalData.raids[raidId];
+                for (const timeSlot in raid) {
+                    if (raid[timeSlot].includes(currentUserName)) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        // 사용자의 확정 레이드 횟수 계산
+        function getUserConfirmedCount(userName) {
+            let count = 0;
+            for (const raidId in globalData.raids) {
+                const raid = globalData.raids[raidId];
+                for (const timeSlot in raid) {
+                    const confirmedMembers = getConfirmedMembers(raidId, timeSlot);
+                    if (confirmedMembers.includes(userName)) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        // 사용자가 다른 시간대에 투표했는지 확인
+        function hasOtherVotes(userName, raidId, timeSlot) {
+            for (const rid in globalData.raids) {
+                const raid = globalData.raids[rid];
+                for (const ts in raid) {
+                    // 현재 시간대가 아닌 다른 곳에 투표했는지 확인
+                    if (!(rid === raidId && ts === timeSlot)) {
+                        if (raid[ts].includes(userName)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // 확정 멤버 계산 (우선순위 적용)
+        function getConfirmedMembers(raidId, timeSlot) {
+            const raid = globalData.raids[raidId];
+            const participants = raid[timeSlot] || [];
+
+            // 15명 미만이면 전체 반환
+            if (participants.length < AUTO_CONFIRM_THRESHOLD) {
+                return participants;
+            }
+
+            // 우선순위 계산
+            const priorityList = participants.map(userName => {
+                const confirmedCount = getUserConfirmedCount(userName);
+                const hasOther = hasOtherVotes(userName, raidId, timeSlot);
+                
+                let priority = 0;
+                
+                // 우선순위 결정
+                if (!hasOther && confirmedCount === 0) {
+                    priority = 1; // 1순위: 다른 시간대 없음 + 레이드 0번
+                } else if (confirmedCount === 0) {
+                    priority = 2; // 2순위: 레이드 0번
+                } else if (!hasOther && confirmedCount === 1) {
+                    priority = 3; // 3순위: 다른 시간대 없음 + 레이드 1번
+                } else if (confirmedCount === 1) {
+                    priority = 4; // 4순위: 레이드 1번
+                } else {
+                    priority = 5; // 그 외 (레이드 2번 이상)
+                }
+
+                return {
+                    userName,
+                    priority,
+                    confirmedCount,
+                    hasOther
+                };
+            });
+
+            // 우선순위로 정렬 (낮은 숫자가 높은 우선순위)
+            priorityList.sort((a, b) => {
+                if (a.priority !== b.priority) {
+                    return a.priority - b.priority;
+                }
+                // 같은 우선순위면 이름순
+                return a.userName.localeCompare(b.userName);
+            });
+
+            // 상위 10명만 반환
+            return priorityList.slice(0, CONFIRMED_PARTICIPANTS).map(p => p.userName);
+        }
+
+        // 전체 사용자 수 계산
+        function getTotalUsers() {
+            const users = new Set();
+            for (const raidId in globalData.raids) {
+                const raid = globalData.raids[raidId];
+                for (const timeSlot in raid) {
+                    raid[timeSlot].forEach(user => users.add(user));
+                }
+            }
+            return users.size;
+        }
+
+        // 사용자별 참가 횟수 계산
+        function getUserVoteCounts() {
+            const counts = {};
+            for (const raidId in globalData.raids) {
+                const raid = globalData.raids[raidId];
+                for (const timeSlot in raid) {
+                    raid[timeSlot].forEach(user => {
+                        counts[user] = (counts[user] || 0) + 1;
+                    });
+                }
+            }
+            return counts;
+        }
+
+        // 평일 요일 선택 저장
+        function saveWeekdaySelection() {
+            globalData.weekdaySelections.weekday1 = document.getElementById('weekday1Day').value;
+            globalData.weekdaySelections.weekday2 = document.getElementById('weekday2Day').value;
+            dataRef.set(globalData);
+        }
+
+        // 타임슬롯 렌더링
+        function renderTimeSlots(raidId, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const raid = globalData.raids[raidId];
+            
+            container.innerHTML = timeSlots.map(time => {
+                const participants = raid[time] || [];
+                const isSelected = participants.includes(currentUserName);
+                const isRecommended = participants.length >= RECOMMEND_THRESHOLD;
+                const isAutoConfirm = participants.length >= AUTO_CONFIRM_THRESHOLD;
+                
+                let confirmedMembers = [];
+                let waitingMembers = [];
+                
+                if (isAutoConfirm) {
+                    confirmedMembers = getConfirmedMembers(raidId, time);
+                    waitingMembers = participants.filter(p => !confirmedMembers.includes(p));
+                } else {
+                    confirmedMembers = participants;
+                }
+
+                const isConfirmed = confirmedMembers.includes(currentUserName);
+                const isWaiting = waitingMembers.includes(currentUserName);
+
+                return `
+                    <div class="time-slot ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}" onclick="toggleVote('${raidId}', '${time}')">
+                        <div class="slot-header">
+                            <div>
+                                <span>${time}</span>
+                                ${isRecommended ? '<span class="badge-recommend">추천</span>' : ''}
+                            </div>
+                            <span class="slot-count">${participants.length}명</span>
+                        </div>
+                        
+                        ${isAutoConfirm ? `
+                            <div class="confirmed-section">
+                                <div class="section-title">✓ 확정 (${confirmedMembers.length}명)</div>
+                                <div class="participants">
+                                    ${confirmedMembers.map(p => `<span class="participant confirmed ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
+                                </div>
+                            </div>
+                            ${waitingMembers.length > 0 ? `
+                                <div class="waiting-section">
+                                    <div class="section-title">⏳ 대기 (${waitingMembers.length}명)</div>
+                                    <div class="participants">
+                                        ${waitingMembers.map(p => `<span class="participant waiting ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        ` : `
+                            <div class="participants">
+                                ${confirmedMembers.map(p => `<span class="participant ${p === currentUserName ? 'me' : ''}">${p}</span>`).join('')}
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 전체 렌더링
+        function render() {
+            const app = document.getElementById('app');
+            
+            const userVoteCounts = getUserVoteCounts();
+            const allUsers = Object.keys(userVoteCounts).sort();
+
+            app.innerHTML = `
+                <div class="section">
+                    <h2>👤 내 정보</h2>
+                    <div class="user-setup">
+                        <div class="user-input-group">
+                            <input type="text" id="userName" placeholder="이름 입력" value="${currentUserName}">
+                            <button onclick="setUserName()">등록</button>
+                        </div>
+                        ${currentUserName ? `<div><strong>등록된 이름:</strong> ${currentUserName}</div>` : '<div style="color: #888;"><em>이름을 등록해주세요</em></div>'}
+                    </div>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${getMyVoteCount()}</div>
+                            <div class="stat-label">내 투표 횟수</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${getTotalUsers()}</div>
+                            <div class="stat-label">전체 마을원</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>👥 전체 마을원 (${allUsers.length}명)</h2>
+                    <div class="user-list">
+                        ${allUsers.map(user => {
+                            const confirmedCount = getUserConfirmedCount(user);
+                            return `
+                                <div class="user-tag ${user === currentUserName ? 'me' : ''}">
+                                    <span>${user}</span>
+                                    <span class="count">${userVoteCounts[user]}투표 / ${confirmedCount}확정</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🗓️ 주말 레이드</h2>
+                    <div class="raid-grid">
+                        <div class="raid-card">
+                            <h3>토요일 1차</h3>
+                            <div id="sat1"></div>
+                        </div>
+                        <div class="raid-card">
+                            <h3>토요일 2차</h3>
+                            <div id="sat2"></div>
+                        </div>
+                        <div class="raid-card">
+                            <h3>일요일 1차</h3>
+                            <div id="sun1"></div>
+                        </div>
+                        <div class="raid-card">
+                            <h3>일요일 2차</h3>
+                            <div id="sun2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📅 평일 레이드</h2>
+                    <div class="raid-grid">
+                        <div class="raid-card">
+                            <h3>평일 1차</h3>
+                            <select id="weekday1Day" onchange="saveWeekdaySelection()">
+                                <option value="">요일 선택</option>
+                                <option value="월" ${globalData.weekdaySelections.weekday1 === '월' ? 'selected' : ''}>월요일</option>
+                                <option value="화" ${globalData.weekdaySelections.weekday1 === '화' ? 'selected' : ''}>화요일</option>
+                                <option value="목" ${globalData.weekdaySelections.weekday1 === '목' ? 'selected' : ''}>목요일</option>
+                                <option value="금" ${globalData.weekdaySelections.weekday1 === '금' ? 'selected' : ''}>금요일</option>
+                            </select>
+                            <div id="weekday1"></div>
+                        </div>
+                        <div class="raid-card">
+                            <h3>평일 2차</h3>
+                            <select id="weekday2Day" onchange="saveWeekdaySelection()">
+                                <option value="">요일 선택</option>
+                                <option value="월" ${globalData.weekdaySelections.weekday2 === '월' ? 'selected' : ''}>월요일</option>
+                                <option value="화" ${globalData.weekdaySelections.weekday2 === '화' ? 'selected' : ''}>화요일</option>
+                                <option value="목" ${globalData.weekdaySelections.weekday2 === '목' ? 'selected' : ''}>목요일</option>
+                                <option value="금" ${globalData.weekdaySelections.weekday2 === '금' ? 'selected' : ''}>금요일</option>
+                            </select>
+                            <div id="weekday2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>⚙️ 관리</h2>
+                    <div class="admin-controls">
+                        <button class="btn-danger" onclick="resetSchedule()">전체 스케줄 초기화</button>
+                        <button class="btn-secondary" onclick="addTestData()">테스트 데이터 추가</button>
+                    </div>
+                    <p style="margin-top: 15px; color: #888; font-size: 0.9em;">
+                        ⚠️ 초기화는 관리자 비밀번호가 필요합니다<br>
+                        💡 테스트 데이터: 토요일 1차 18:00에 20명의 테스트 투표 추가
+                    </p>
+                </div>
+            `;
+
+            // 타임슬롯 렌더링
+            renderTimeSlots('sat1', 'sat1');
+            renderTimeSlots('sat2', 'sat2');
+            renderTimeSlots('sun1', 'sun1');
+            renderTimeSlots('sun2', 'sun2');
+            renderTimeSlots('weekday1', 'weekday1');
+            renderTimeSlots('weekday2', 'weekday2');
+        }
+
+        // 테스트 데이터 추가
+        function addTestData() {
+            if (!confirm('테스트 데이터를 추가하시겠습니까?\n토요일 1차 18:00에 20명의 가상 투표가 추가됩니다.')) {
+                return;
+            }
+
+            // 다양한 패턴의 테스트 사용자 생성
+            const testUsers = [];
+            
+            // 1순위 그룹: 18:00만 투표 + 레이드 0번 (5명)
+            for (let i = 1; i <= 5; i++) {
+                testUsers.push(`1순위${i}`);
+            }
+            
+            // 2순위 그룹: 여러 시간대 투표 + 레이드 0번 (5명)
+            for (let i = 1; i <= 5; i++) {
+                testUsers.push(`2순위${i}`);
+            }
+            
+            // 3순위 그룹: 18:00만 투표 + 다른 레이드 1번 확정 (5명)
+            for (let i = 1; i <= 5; i++) {
+                testUsers.push(`3순위${i}`);
+            }
+            
+            // 4순위 그룹: 여러 시간대 투표 + 다른 레이드 1번 확정 (5명)
+            for (let i = 1; i <= 5; i++) {
+                testUsers.push(`4순위${i}`);
+            }
+
+            // 토요일 1차 18:00에 모든 사용자 추가
+            if (!globalData.raids.sat1['18:00']) {
+                globalData.raids.sat1['18:00'] = [];
+            }
+            globalData.raids.sat1['18:00'] = testUsers;
+
+            // 2순위 그룹에게 19:00도 투표하게 함
+            if (!globalData.raids.sat1['19:00']) {
+                globalData.raids.sat1['19:00'] = [];
+            }
+            for (let i = 1; i <= 5; i++) {
+                globalData.raids.sat1['19:00'].push(`2순위${i}`);
+            }
+
+            // 3순위 그룹에게 일요일 1차 20:00 확정 부여 (9명만 추가하여 확정되지 않게)
+            if (!globalData.raids.sun1['20:00']) {
+                globalData.raids.sun1['20:00'] = [];
+            }
+            for (let i = 1; i <= 5; i++) {
+                globalData.raids.sun1['20:00'].push(`3순위${i}`);
+            }
+
+            // 4순위 그룹에게 여러 시간대 투표 + 일요일 2차 확정
+            if (!globalData.raids.sun1['21:00']) {
+                globalData.raids.sun1['21:00'] = [];
+            }
+            for (let i = 1; i <= 5; i++) {
+                globalData.raids.sun1['21:00'].push(`4순위${i}`);
+            }
+            
+            // 일요일 2차 22:00에 4순위 그룹 확정 (정확히 10명으로 확정)
+            if (!globalData.raids.sun2['22:00']) {
+                globalData.raids.sun2['22:00'] = [];
+            }
+            const sun2Participants = [];
+            for (let i = 1; i <= 5; i++) {
+                sun2Participants.push(`4순위${i}`);
+            }
+            // 추가 5명으로 정확히 10명
+            for (let i = 1; i <= 5; i++) {
+                sun2Participants.push(`채우기${i}`);
+            }
+            globalData.raids.sun2['22:00'] = sun2Participants;
+
+            dataRef.set(globalData);
+            alert('테스트 데이터가 추가되었습니다!\n\n확인사항:\n- 토요일 1차 18:00: 20명 투표\n- 1순위 5명: 18:00만 투표, 레이드 0번\n- 2순위 5명: 18:00+19:00 투표, 레이드 0번\n- 3순위 5명: 18:00만 투표, 다른 레이드 참가\n- 4순위 5명: 여러 시간대 투표, 다른 레이드 확정');
+        }
+    </script>
+</body>
+</html>
